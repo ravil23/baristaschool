@@ -1,4 +1,4 @@
-module github.com/ravil23/lingualynda/telegrambot
+module github.com/ravil23/baristaschool/telegrambot
 
 go 1.13
 

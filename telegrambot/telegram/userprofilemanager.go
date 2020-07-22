@@ -4,25 +4,27 @@ import (
 	"log"
 	"time"
 
-	"github.com/ravil23/lingualynda/telegrambot/dao"
-	"github.com/ravil23/lingualynda/telegrambot/entity"
-	"github.com/ravil23/lingualynda/telegrambot/postgres"
+	"github.com/ravil23/baristaschool/telegrambot/dao"
+	"github.com/ravil23/baristaschool/telegrambot/entity"
+	"github.com/ravil23/baristaschool/telegrambot/postgres"
 )
 
 const (
 	userMemorizedTermsTTL = -2 * 7 * 24 * time.Hour
 )
 
+var alreadyFinishedUsers = map[entity.UserID]bool{}
+
 type UserProfileManager struct {
 	pollsStates  map[entity.PollID]*entity.Poll
 	userProfiles map[entity.UserID]*entity.UserProfile
 
 	userDAO              dao.UserDAO
-	userMemorizedTermDAO dao.UserMemorizedTermDAO
+	userMemorizedTermDAO dao.UserMemorizedQuestionDAO
 }
 
 func NewUserProfileManager(conn *postgres.Connection, userDAO dao.UserDAO) (*UserProfileManager, error) {
-	userMemorizedTermDAO, err := dao.NewUserMemorizedTermDAO(conn)
+	userMemorizedTermDAO, err := dao.NewUserMemorizedQuestionDAO(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -48,12 +50,12 @@ func (m *UserProfileManager) AddPollAnswer(userID entity.UserID, pollAnswer *ent
 	}
 	defer delete(m.pollsStates, pollAnswer.PollID)
 	correctlyTranslated := poll.AllIsCorrect(pollAnswer.ChosenOptions)
-	userMemorizedTerm := entity.NewUserMemorizedTerm(userID, poll.Term, correctlyTranslated)
+	userMemorizedTerm := entity.NewUserMemorizedQuestion(userID, poll.Question, correctlyTranslated)
 	if err := m.userMemorizedTermDAO.Upsert(userMemorizedTerm); err != nil {
 		return err
 	}
 
-	m.updateUserProfiles(userID, poll.Term, correctlyTranslated)
+	m.updateUserProfiles(userID, poll.Question, correctlyTranslated)
 	return nil
 }
 
@@ -77,19 +79,19 @@ func (m *UserProfileManager) initUserProfiles() {
 		}
 		log.Printf("User %d has %d memorized terms for last %s", user.ID, len(userMemorizedTerms), userMemorizedTermsTTL)
 		for _, userMemorizedTerm := range userMemorizedTerms {
-			m.updateUserProfiles(user.ID, userMemorizedTerm.Term, userMemorizedTerm.CorrectlyTranslated)
+			m.updateUserProfiles(user.ID, userMemorizedTerm.Question, userMemorizedTerm.CorrectlyTranslated)
 		}
 	}
 }
 
-func (m *UserProfileManager) updateUserProfiles(userID entity.UserID, term entity.Term, correctlyTranslated bool) {
+func (m *UserProfileManager) updateUserProfiles(userID entity.UserID, question entity.Question, correctlyTranslated bool) {
 	if _, found := m.userProfiles[userID]; !found {
 		m.userProfiles[userID] = entity.NewUserProfile(userID)
 	}
 	userProfile := m.userProfiles[userID]
 	if correctlyTranslated {
-		userProfile.AddCorrectlyTranslatedTerm(term)
+		userProfile.AddCorrectlyAnsweredQuestion(question)
 	} else {
-		userProfile.AddMistakenlyTranslatedTerm(term)
+		userProfile.AddMistakenlyAnsweredQuestion(question)
 	}
 }

@@ -29,3 +29,8 @@ Show list of users:
 ```
 docker exec postgres_container /reports/users_list.sh
 ```
+
+## Generate collection from table
+```
+python3 tools/quiz.py tools/baristaschool.csv > telegrambot/collection/quiz.go
+```

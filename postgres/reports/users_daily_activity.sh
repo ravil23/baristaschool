@@ -8,7 +8,7 @@ if [ -z "$USER_ID" ]
     exit 1
 fi
 
-psql -v USER_ID="$USER_ID" -U lingualynda <<-EOSQL
+psql -v USER_ID="$USER_ID" -U baristaschool <<-EOSQL
     SELECT
       user_id,
       date(timestamp) as date,

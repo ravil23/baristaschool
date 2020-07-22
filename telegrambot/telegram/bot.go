@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ravil23/lingualynda/telegrambot/entity"
-	"github.com/ravil23/lingualynda/telegrambot/postgres"
+	"github.com/ravil23/baristaschool/telegrambot/entity"
+	"github.com/ravil23/baristaschool/telegrambot/postgres"
 )
 
 const (
@@ -20,20 +20,6 @@ const (
 )
 
 var helpText = strings.Join([]string{
-	"<b>Vocabularies</b>",
-	fmt.Sprintf("/%s - All terms", entity.ChatVocabularyTypeAllTerms),
-	fmt.Sprintf("/%s - Only words from <i>Vocabulary for IELTS Advanced - Pauline Cullen</i>", entity.ChatVocabularyTypePauline),
-	fmt.Sprintf("/%s - Only phrasal verbs", entity.ChatVocabularyTypePhrasalVerbs),
-	fmt.Sprintf("/%s - Only superlative adjectives", entity.ChatVocabularyTypeSuperlativeAdjectives),
-	fmt.Sprintf("/%s - Only words about body", entity.ChatVocabularyTypeBody),
-	fmt.Sprintf("/%s - Only idioms", entity.ChatVocabularyTypeIdioms),
-	fmt.Sprintf("/%s - Only words from lesson", entity.ChatVocabularyTypeLesson),
-	"",
-	"<b>Modes</b>",
-	fmt.Sprintf("/%s - All tasks", entity.ChatModeAllDirections),
-	fmt.Sprintf("/%s - Only Russian to English tasks", entity.ChatModeRusToEng),
-	fmt.Sprintf("/%s - Only English to Russian tasks", entity.ChatModeEngToRus),
-	"",
 	"<b>Information</b>",
 	"/progress - Show current progress in selected vocabulary and mode",
 	"/help - Show this description of usage",
@@ -88,7 +74,6 @@ func (b *Bot) Run() {
 		}
 	}()
 	b.api.SetMessagesHandler(func(message *entity.Message) error {
-		b.api.UpdateInternalState(message)
 		switch message.Text {
 		case "/help", "/start":
 			b.api.SendHTMLMessage(message.ChatID, helpText)

@@ -6,31 +6,31 @@ const (
 )
 
 type UserProfile struct {
-	userID                    UserID
-	correctlyTranslatedTerms  map[Term]int
-	mistakenlyTranslatedTerms map[Term]int
+	userID                     UserID
+	correctlyAnsweredQuestion  map[Question]int
+	mistakenlyAnsweredQuestion map[Question]int
 }
 
 func NewUserProfile(userID UserID) *UserProfile {
 	return &UserProfile{
-		userID:                    userID,
-		correctlyTranslatedTerms:  make(map[Term]int),
-		mistakenlyTranslatedTerms: make(map[Term]int),
+		userID:                     userID,
+		correctlyAnsweredQuestion:  make(map[Question]int),
+		mistakenlyAnsweredQuestion: make(map[Question]int),
 	}
 }
 
-func (p *UserProfile) AddCorrectlyTranslatedTerm(term Term) {
-	p.correctlyTranslatedTerms[term]++
+func (p *UserProfile) AddCorrectlyAnsweredQuestion(question Question) {
+	p.correctlyAnsweredQuestion[question]++
 }
 
-func (p *UserProfile) AddMistakenlyTranslatedTerm(term Term) {
-	p.mistakenlyTranslatedTerms[term]++
+func (p *UserProfile) AddMistakenlyAnsweredQuestion(question Question) {
+	p.mistakenlyAnsweredQuestion[question]++
 }
 
-func (p *UserProfile) GetMemorizationWeight(term Term) float64 {
-	correctTranslations := p.correctlyTranslatedTerms[term]
-	mistakeTranslations := p.mistakenlyTranslatedTerms[term]
-	diff := float64(correctTranslations - mistakeTranslations)
+func (p *UserProfile) GetMemorizationWeight(question Question) float64 {
+	correctAnswers := p.correctlyAnsweredQuestion[question]
+	mistakeAnswers := p.mistakenlyAnsweredQuestion[question]
+	diff := float64(correctAnswers - mistakeAnswers)
 	if diff == 0 {
 		return 1
 	} else if diff < 0 {
@@ -40,8 +40,8 @@ func (p *UserProfile) GetMemorizationWeight(term Term) float64 {
 	}
 }
 
-func (p *UserProfile) IsCorrectMemorized(term Term) bool {
-	correctTranslations := p.correctlyTranslatedTerms[term]
-	mistakeTranslations := p.mistakenlyTranslatedTerms[term]
-	return correctTranslations > mistakeTranslations
+func (p *UserProfile) IsCorrectMemorized(question Question) bool {
+	correctAnswers := p.correctlyAnsweredQuestion[question]
+	mistakeAnswers := p.mistakenlyAnsweredQuestion[question]
+	return correctAnswers > mistakeAnswers
 }

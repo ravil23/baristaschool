@@ -9,7 +9,7 @@ if [ -z "$USER_ID" ]
     exit 1
 fi
 
-psql -v USER_ID="$USER_ID" -v LIMIT="$LIMIT" -U lingualynda <<-EOSQL
+psql -v USER_ID="$USER_ID" -v LIMIT="$LIMIT" -U baristaschool <<-EOSQL
     SELECT
       user_id,
       term,

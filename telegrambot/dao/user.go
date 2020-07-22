@@ -3,8 +3,8 @@ package dao
 import (
 	"github.com/go-pg/pg/v9/orm"
 
-	"github.com/ravil23/lingualynda/telegrambot/entity"
-	"github.com/ravil23/lingualynda/telegrambot/postgres"
+	"github.com/ravil23/baristaschool/telegrambot/entity"
+	"github.com/ravil23/baristaschool/telegrambot/postgres"
 )
 
 type UserDAO interface {

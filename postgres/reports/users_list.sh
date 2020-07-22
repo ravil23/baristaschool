@@ -1,6 +1,6 @@
 #!/bin/sh
 
-psql -U lingualynda <<-EOSQL
+psql -U baristaschool <<-EOSQL
     SELECT *
     FROM public.user
     ORDER BY created_at DESC;

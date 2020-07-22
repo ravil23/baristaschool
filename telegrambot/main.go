@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ravil23/lingualynda/telegrambot/telegram"
+	"github.com/ravil23/baristaschool/telegrambot/telegram"
 )
 
 func main() {

@@ -9,16 +9,16 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"github.com/ravil23/lingualynda/telegrambot/dao"
-	"github.com/ravil23/lingualynda/telegrambot/entity"
-	"github.com/ravil23/lingualynda/telegrambot/postgres"
+	"github.com/ravil23/baristaschool/telegrambot/collection"
+	"github.com/ravil23/baristaschool/telegrambot/dao"
+	"github.com/ravil23/baristaschool/telegrambot/entity"
+	"github.com/ravil23/baristaschool/telegrambot/postgres"
 )
 
 const (
 	timeout             = 10
-	maxPollOptionsCount = 4
-	alertsChatID        = -1001142742669
-	botNickName         = "LinguaLyndaBot"
+	alertsChatID        = -1001215763168
+	botNickName         = "BaristaSchoolBot"
 	botMention          = "@" + botNickName
 )
 
@@ -31,7 +31,6 @@ type API interface {
 	SendMessage(chatID entity.ChatID, text string)
 	SendHTMLMessage(chatID entity.ChatID, text string)
 	SendProgress(user *entity.User)
-	UpdateInternalState(message *entity.Message)
 }
 
 var _ API = (*api)(nil)
@@ -44,7 +43,6 @@ type api struct {
 
 	userDAO dao.UserDAO
 
-	chatManager        *ChatManager
 	userProfileManager *UserProfileManager
 
 	messagesHandler    func(update *tgbotapi.Update) error
@@ -83,7 +81,6 @@ func NewAPI(botToken string, conn *postgres.Connection) (*api, error) {
 
 		userDAO: userDAO,
 
-		chatManager:        NewChatManager(),
 		userProfileManager: userProfileManager,
 	}, nil
 }
@@ -146,18 +143,13 @@ func (api *api) ListenUpdates() error {
 func (api *api) SendNextPoll(user *entity.User) error {
 	poll, found := api.getNextPoll(user)
 	if !found {
-		chat := api.chatManager.GetChatOrCreate(user.ChatID)
-		headerText := fmt.Sprintf(
-			"<b>Congratulations!</b>\nYou have memorized all terms from /%s vocabulary in /%s mode.",
-			chat.GetVocabularyType(),
-			chat.GetMode(),
-		)
+		headerText := fmt.Sprintf("<b>Congratulations!</b>\nYou have answered correctly to all questions.")
 		progressText := api.getProgressByUser(user)
 		text := strings.Join([]string{
 			headerText,
 			progressText,
 			"",
-			"Please change vocabulary or mode. Type /help to see instructions.",
+			"Type /next to continue learning.",
 		}, "\n")
 		api.SendHTMLMessage(user.ChatID, text)
 		return nil
@@ -172,52 +164,36 @@ func (api *api) SendNextPoll(user *entity.User) error {
 	}
 	poll.ID = entity.PollID(tgMessage.Poll.ID)
 	api.userProfileManager.AddPoll(poll)
-	if chat := api.chatManager.GetChatOrCreate(user.ChatID); chat.IsDebuggingEnabled() {
-		api.sendDebugMessage(chat, user, poll)
-	}
 	return nil
 }
 
 func (api *api) getNextPoll(user *entity.User) (*entity.Poll, bool) {
-	chat := api.chatManager.GetChatOrCreate(user.ChatID)
-	listOfVocabularies := chat.GetListOfVocabularies()
-	vocabularyIndex := rand.Intn(len(listOfVocabularies))
-	selectedVocabulary := listOfVocabularies[vocabularyIndex]
-	var term entity.Term
+	quiz := collection.Quiz
+	var question entity.Question
 	var weight float64
 	var finished bool
 	if userProfile, found := api.userProfileManager.GetUserProfile(user.ID); found {
-		for i := range listOfVocabularies {
-			selectedVocabulary = listOfVocabularies[(vocabularyIndex+i)%len(listOfVocabularies)]
-			term, weight, finished = selectedVocabulary.GetTermByUserProfile(userProfile)
-			if !finished {
-				break
-			}
-		}
-		if finished {
+		question, weight, finished = quiz.GetQuestionByUserProfile(userProfile)
+		if finished && !alreadyFinishedUsers[user.ID] {
+			alreadyFinishedUsers[user.ID] = true
 			return nil, false
 		}
 	} else {
-		term = selectedVocabulary.GetRandomTerm()
+		question = quiz.GetRandomQuestion()
 	}
-	correctTranslations := selectedVocabulary.GetTranslations(term)
-	correctTranslation := correctTranslations[rand.Intn(len(correctTranslations))]
+	answer := quiz.GetAnswer(question)
 	poll := &entity.Poll{
-		Term:     term,
+		Question: question,
 		Weight:   weight,
 		Type:     entity.PollTypeQuiz,
 		IsPublic: true,
 		Options: []*entity.PollOption{
-			{Translation: correctTranslation, IsCorrect: true},
+			{Value: answer.CorrectOption, IsCorrect: true},
 		},
 	}
-	for len(poll.Options) < maxPollOptionsCount {
-		randomTranslation := selectedVocabulary.GetRandomTranslation()
-		if poll.IsExistedOption(randomTranslation) {
-			continue
-		}
+	for _, option := range answer.InvalidOptions {
 		poll.Options = append(poll.Options, &entity.PollOption{
-			Translation: randomTranslation,
+			Value: option,
 			IsCorrect:   false,
 		})
 	}
@@ -232,53 +208,15 @@ func (api *api) SendProgress(user *entity.User) {
 }
 
 func (api *api) getProgressByUser(user *entity.User) string {
-	chat := api.chatManager.GetChatOrCreate(user.ChatID)
 	userProfile, _ := api.userProfileManager.GetUserProfile(user.ID)
-	currentText := api.getProgressByChat(chat, userProfile, false)
-	otherTexts := make([]string, 0, len(entity.AllChatVocabularyTypes))
-	for _, vocabularyType := range entity.AllChatVocabularyTypes {
-		if vocabularyType == chat.GetVocabularyType() {
-			continue
-		}
-		otherChat := entity.NewChat(0)
-		api.chatManager.SetupChatConfiguration(otherChat, entity.ChatModeAllDirections, vocabularyType)
-		otherTexts = append(otherTexts, api.getProgressByChat(otherChat, userProfile, true))
-	}
-	return strings.Join([]string{
-		currentText,
-		"",
-		"Other vocabularies:",
-		strings.Join(otherTexts, "\n"),
-	}, "\n")
-}
-
-func (api *api) getProgressByChat(chat *entity.Chat, userProfile *entity.UserProfile, short bool) string {
-	totalTermsCount := 0
-	correctMemorizedTermsCount := 0
-	for _, vocabulary := range chat.GetListOfVocabularies() {
-		totalTermsCount += vocabulary.GetTermsCount()
-		if userProfile != nil {
-			correctMemorizedTermsCount += vocabulary.GetCorrectMemorizedTermsCount(userProfile)
-		}
-	}
-	if short {
-		return fmt.Sprintf(
-			"/%s: %s (%d terms from %d memorized)",
-			chat.GetVocabularyType(),
-			fmt.Sprintf("%.1f%%", 100*float64(correctMemorizedTermsCount)/float64(totalTermsCount)),
-			correctMemorizedTermsCount,
-			totalTermsCount,
-		)
-	} else {
-		return fmt.Sprintf(
-			"Progress of /%s vocabulary in /%s mode is %s (%d terms from %d memorized)",
-			chat.GetVocabularyType(),
-			chat.GetMode(),
-			fmt.Sprintf("%.1f%%", 100*float64(correctMemorizedTermsCount)/float64(totalTermsCount)),
-			correctMemorizedTermsCount,
-			totalTermsCount,
-		)
-	}
+	totalTermsCount := collection.Quiz.GetQuestionsCount()
+	correctMemorizedTermsCount := collection.Quiz.GetCorrectMemorizedQuestionsCount(userProfile)
+	return fmt.Sprintf(
+		"Progress is %s (%d questions from %d memorized)",
+		fmt.Sprintf("%.1f%%", 100*float64(correctMemorizedTermsCount)/float64(totalTermsCount)),
+		correctMemorizedTermsCount,
+		totalTermsCount,
+	)
 }
 
 func (api *api) SendAlert(text string) {
@@ -301,22 +239,6 @@ func (api *api) sendMessage(chatID entity.ChatID, text string, parseMode string)
 	if err != nil {
 		log.Printf("Error on sending message: %s", err)
 	}
-}
-
-func (api *api) UpdateInternalState(message *entity.Message) {
-	api.chatManager.UpdateChatConfigurations(message.ChatID, message.Text)
-}
-
-func (api *api) sendDebugMessage(chat *entity.Chat, user *entity.User, poll *entity.Poll) {
-	debugMessage := fmt.Sprintf("\nUser: %s", user.GetFormattedName())
-	debugMessage += fmt.Sprintf("\nChat ID: %d", chat.GetID())
-	debugMessage += fmt.Sprintf("\nSelected mode: %s", chat.GetMode())
-	debugMessage += fmt.Sprintf("\nSelected vocabulary type: %s", chat.GetVocabularyType())
-	debugMessage += fmt.Sprintf("\nSelected vocabularies count: %d", len(chat.GetListOfVocabularies()))
-	if poll != nil {
-		debugMessage += fmt.Sprintf("\nPoll: %+v with weight %.3f", poll.Term, poll.Weight)
-	}
-	api.SendAlert(debugMessage)
 }
 
 func GetBotTokenOrPanic() string {

@@ -18,7 +18,7 @@ func (t PollType) String() string {
 }
 
 type PollOption struct {
-	Translation Translation
+	Value string
 	IsCorrect   bool
 }
 
@@ -27,14 +27,14 @@ type Poll struct {
 	Type     PollType
 	IsPublic bool
 
-	Term    Term
+	Question Question
 	Weight  float64
 	Options []*PollOption
 }
 
-func (p *Poll) IsExistedOption(translation Translation) bool {
+func (p *Poll) IsExistedOption(option string) bool {
 	for _, pollOption := range p.Options {
-		if translation == pollOption.Translation {
+		if option == pollOption.Value {
 			return true
 		}
 	}
@@ -55,13 +55,13 @@ func (p *Poll) ToChatable(chatID ChatID) *tgbotapi.SendPollConfig {
 	correctAnswer := ""
 	tgOptions := make([]string, 0, len(p.Options))
 	for i, option := range p.Options {
-		tgOptions = append(tgOptions, option.Translation.String())
+		tgOptions = append(tgOptions, option.Value)
 		if option.IsCorrect {
 			correctOptionID = i
-			correctAnswer = option.Translation.String()
+			correctAnswer = option.Value
 		}
 	}
-	tgPoll := tgbotapi.NewPoll(int64(chatID), p.Term.String(), tgOptions...)
+	tgPoll := tgbotapi.NewPoll(int64(chatID), p.Question.String(), tgOptions...)
 	tgPoll.CorrectOptionID = int64(correctOptionID)
 	tgPoll.Type = p.Type.String()
 	tgPoll.IsAnonymous = !p.IsPublic
