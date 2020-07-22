@@ -7,17 +7,17 @@ import (
 type UserMemorizedQuestion struct {
 	tableName struct{} `pg:"userMemorizedQuestion"`
 
-	Timestamp           time.Time `pg:"timestamp,pk"`
-	UserID              UserID    `pg:"user_id,pk"`
-	Question            Question      `pg:"question,pk"`
-	CorrectlyTranslated bool      `pg:"correctly_translated"`
+	Timestamp         time.Time `pg:"timestamp,pk"`
+	UserID            UserID    `pg:"user_id,pk"`
+	Question          Question  `pg:"question,pk"`
+	CorrectlyAnswered bool      `pg:"correctly_answered"`
 }
 
-func NewUserMemorizedQuestion(userID UserID, question Question, correctlyTranslated bool) *UserMemorizedQuestion {
+func NewUserMemorizedQuestion(userID UserID, question Question, correctlyAnswered bool) *UserMemorizedQuestion {
 	return &UserMemorizedQuestion{
-		Timestamp:           time.Now(),
-		UserID:              userID,
-		Question:            question,
-		CorrectlyTranslated: correctlyTranslated,
+		Timestamp:         time.Now(),
+		UserID:            userID,
+		Question:          question,
+		CorrectlyAnswered: correctlyAnswered,
 	}
 }

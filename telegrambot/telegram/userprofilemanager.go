@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	userMemorizedTermsTTL = -2 * 7 * 24 * time.Hour
+	userMemorizedQuestionsTTL = -2 * 7 * 24 * time.Hour
 )
 
 var alreadyFinishedUsers = map[entity.UserID]bool{}
@@ -19,20 +19,20 @@ type UserProfileManager struct {
 	pollsStates  map[entity.PollID]*entity.Poll
 	userProfiles map[entity.UserID]*entity.UserProfile
 
-	userDAO              dao.UserDAO
-	userMemorizedTermDAO dao.UserMemorizedQuestionDAO
+	userDAO                  dao.UserDAO
+	userMemorizedQuestionDAO dao.UserMemorizedQuestionDAO
 }
 
 func NewUserProfileManager(conn *postgres.Connection, userDAO dao.UserDAO) (*UserProfileManager, error) {
-	userMemorizedTermDAO, err := dao.NewUserMemorizedQuestionDAO(conn)
+	userMemorizedQuestionDAO, err := dao.NewUserMemorizedQuestionDAO(conn)
 	if err != nil {
 		return nil, err
 	}
 	m := &UserProfileManager{
-		pollsStates:          make(map[entity.PollID]*entity.Poll),
-		userProfiles:         make(map[entity.UserID]*entity.UserProfile),
-		userDAO:              userDAO,
-		userMemorizedTermDAO: userMemorizedTermDAO,
+		pollsStates:              make(map[entity.PollID]*entity.Poll),
+		userProfiles:             make(map[entity.UserID]*entity.UserProfile),
+		userDAO:                  userDAO,
+		userMemorizedQuestionDAO: userMemorizedQuestionDAO,
 	}
 	go m.initUserProfiles()
 	return m, nil
@@ -49,13 +49,13 @@ func (m *UserProfileManager) AddPollAnswer(userID entity.UserID, pollAnswer *ent
 		return nil
 	}
 	defer delete(m.pollsStates, pollAnswer.PollID)
-	correctlyTranslated := poll.AllIsCorrect(pollAnswer.ChosenOptions)
-	userMemorizedTerm := entity.NewUserMemorizedQuestion(userID, poll.Question, correctlyTranslated)
-	if err := m.userMemorizedTermDAO.Upsert(userMemorizedTerm); err != nil {
+	correctlyAnswered := poll.AllIsCorrect(pollAnswer.ChosenOptions)
+	userMemorizedQuestion := entity.NewUserMemorizedQuestion(userID, poll.Question, correctlyAnswered)
+	if err := m.userMemorizedQuestionDAO.Upsert(userMemorizedQuestion); err != nil {
 		return err
 	}
 
-	m.updateUserProfiles(userID, poll.Question, correctlyTranslated)
+	m.updateUserProfiles(userID, poll.Question, correctlyAnswered)
 	return nil
 }
 
@@ -70,26 +70,26 @@ func (m *UserProfileManager) initUserProfiles() {
 		panic(err)
 	}
 	log.Printf("Found users count: %d", len(users))
-	from := time.Now().Add(userMemorizedTermsTTL)
+	from := time.Now().Add(userMemorizedQuestionsTTL)
 	for _, user := range users {
 		log.Printf("Init profile for user: %+v", user)
-		userMemorizedTerms, err := m.userMemorizedTermDAO.FindByUserID(user.ID, from)
+		userMemorizedQuestions, err := m.userMemorizedQuestionDAO.FindByUserID(user.ID, from)
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("User %d has %d memorized terms for last %s", user.ID, len(userMemorizedTerms), userMemorizedTermsTTL)
-		for _, userMemorizedTerm := range userMemorizedTerms {
-			m.updateUserProfiles(user.ID, userMemorizedTerm.Question, userMemorizedTerm.CorrectlyTranslated)
+		log.Printf("User %d has memorized %d questions for last %s", user.ID, len(userMemorizedQuestions), userMemorizedQuestionsTTL)
+		for _, userMemorizedQuestion := range userMemorizedQuestions {
+			m.updateUserProfiles(user.ID, userMemorizedQuestion.Question, userMemorizedQuestion.CorrectlyAnswered)
 		}
 	}
 }
 
-func (m *UserProfileManager) updateUserProfiles(userID entity.UserID, question entity.Question, correctlyTranslated bool) {
+func (m *UserProfileManager) updateUserProfiles(userID entity.UserID, question entity.Question, correctlyAnswered bool) {
 	if _, found := m.userProfiles[userID]; !found {
 		m.userProfiles[userID] = entity.NewUserProfile(userID)
 	}
 	userProfile := m.userProfiles[userID]
-	if correctlyTranslated {
+	if correctlyAnswered {
 		userProfile.AddCorrectlyAnsweredQuestion(question)
 	} else {
 		userProfile.AddMistakenlyAnsweredQuestion(question)

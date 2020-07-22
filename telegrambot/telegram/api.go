@@ -209,13 +209,13 @@ func (api *api) SendProgress(user *entity.User) {
 
 func (api *api) getProgressByUser(user *entity.User) string {
 	userProfile, _ := api.userProfileManager.GetUserProfile(user.ID)
-	totalTermsCount := collection.Quiz.GetQuestionsCount()
-	correctMemorizedTermsCount := collection.Quiz.GetCorrectMemorizedQuestionsCount(userProfile)
+	totalQuestionsCount := collection.Quiz.GetQuestionsCount()
+	correctMemorizedQuestionsCount := collection.Quiz.GetCorrectMemorizedQuestionsCount(userProfile)
 	return fmt.Sprintf(
 		"Progress is %s (%d questions from %d memorized)",
-		fmt.Sprintf("%.1f%%", 100*float64(correctMemorizedTermsCount)/float64(totalTermsCount)),
-		correctMemorizedTermsCount,
-		totalTermsCount,
+		fmt.Sprintf("%.1f%%", 100*float64(correctMemorizedQuestionsCount)/float64(totalQuestionsCount)),
+		correctMemorizedQuestionsCount,
+		totalQuestionsCount,
 	)
 }
 
