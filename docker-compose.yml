@@ -1,0 +1,49 @@
+version: "3.7"
+
+services:
+
+  postgres:
+    build: ./postgres
+    container_name: postgres_container
+    environment:
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-lingualynda}"
+    volumes:
+      - ./.data/postgres:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - postgres
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:4.21
+    container_name: pgadmin_container
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}"
+      PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_DEFAULT_PASSWORD:-admin}"
+    volumes:
+      - ./.data/pgadmin:/root/.pgadmin
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    networks:
+      - postgres
+    restart: unless-stopped
+
+  telegrambot:
+    build: ./telegrambot
+    container_name: telegrambot_container
+    environment:
+      POSTGRES_ADDRESS: "postgres:5432"
+      POSTGRES_DATABASE: "lingualynda"
+      POSTGRES_USER: "lingualynda"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-lingualynda}"
+      BOT_TOKEN: "${BOT_TOKEN}"
+    depends_on:
+      - postgres
+    networks:
+      - postgres
+    restart: unless-stopped
+
+networks:
+  postgres:
+    driver: bridge

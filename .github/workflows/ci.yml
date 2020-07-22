@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ci.yml'
+      - 'telegrambot/**'
+      - '!README.md'
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+
+    services:
+      postgres:
+        image: postgres:12.2-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 30s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v1
+      - name: Get dependencies
+        run: |
+          cd telegrambot
+          go get -v -t -d ./...
+      - name: Vet checks
+        run: |
+          cd telegrambot
+          go vet -v ./...
+      - name: Test
+        env:
+          POSTGRES_ADDRESS: localhost:5432
+          POSTGRES_DATABASE: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        run: |
+          cd telegrambot
+          go test -v ./...
+      - name: Build
+        run: |
+          cd telegrambot
+          go build -v ./...
