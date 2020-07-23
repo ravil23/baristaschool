@@ -66,6 +66,10 @@ var Quiz = entity.NewQuiz(map[entity.Question]entity.Answer{
         CorrectOption: "0-2300",
         InvalidOptions: []string{"0-800", "800-1600", "800-2300"},
     },
+    "Период созревания ягоды арабики составляет ... месяцев": {
+        CorrectOption: "6-9",
+        InvalidOptions: []string{"9-12", "6-12", "3-6"},
+    },
     "Период созревания ягоды робусты составляет ... месяцев": {
         CorrectOption: "9-12",
         InvalidOptions: []string{"3-6", "6-12", "3-9"},
