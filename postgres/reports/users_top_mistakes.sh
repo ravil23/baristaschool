@@ -12,11 +12,11 @@ fi
 psql -v USER_ID="$USER_ID" -v LIMIT="$LIMIT" -U baristaschool <<-EOSQL
     SELECT
       user_id,
-      term,
+      question,
       count(1) as mistakes_count
-    FROM usermemorizedterm
-    WHERE user_id = :USER_ID AND NOT coalesce(correctly_translated, false)
-    GROUP BY user_id, term
+    FROM usermemorizedquestion
+    WHERE user_id = :USER_ID AND NOT coalesce(correctly_answered, false)
+    GROUP BY user_id, question
     ORDER BY mistakes_count DESC
     LIMIT :LIMIT;
 EOSQL

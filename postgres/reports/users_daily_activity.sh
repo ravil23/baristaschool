@@ -13,8 +13,8 @@ psql -v USER_ID="$USER_ID" -U baristaschool <<-EOSQL
       user_id,
       date(timestamp) as date,
       count(1) as answers_count,
-      round(100. * sum(correctly_translated::int) / count(1), 1)::text || '%' as correct_answers_rate
-    FROM usermemorizedterm
+      round(100. * sum(correctly_answered::int) / count(1), 1)::text || '%' as correct_answers_rate
+    FROM usermemorizedquestion
     WHERE user_id = :USER_ID
     GROUP BY user_id, date
     ORDER BY date;
