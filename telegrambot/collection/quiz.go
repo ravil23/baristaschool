@@ -74,6 +74,10 @@ var Quiz = entity.NewQuiz(map[entity.Question]entity.Answer{
         CorrectOption: "9-12",
         InvalidOptions: []string{"3-6", "6-12", "3-9"},
     },
+    "Производительность плоских жерновов ... кг/ч": {
+        CorrectOption: "7-9",
+        InvalidOptions: []string{"6-12", "1-3", "3-7"},
+    },
     "Робуста произрастает на высоте ... м": {
         CorrectOption: "0-800",
         InvalidOptions: []string{"800-2300", "800-1000", "0-1000"},
