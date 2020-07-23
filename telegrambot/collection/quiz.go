@@ -274,6 +274,10 @@ var Quiz = entity.NewQuiz(map[entity.Question]entity.Answer{
         CorrectOption: "50",
         InvalidOptions: []string{"15", "25", "35"},
     },
+    "Производительность конических жерновов ... кг/ч": {
+        CorrectOption: "12",
+        InvalidOptions: []string{"11", "13", "9"},
+    },
     "Робуста была признана видом кофе в ... веке": {
         CorrectOption: "19",
         InvalidOptions: []string{"9", "16", "13"},
