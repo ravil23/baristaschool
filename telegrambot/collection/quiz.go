@@ -210,7 +210,7 @@ var Quiz = entity.NewQuiz(map[entity.Question]entity.Answer{
         CorrectOption: "350",
         InvalidOptions: []string{"150", "600", "1000"},
     },
-    "Питчер объемом ... со используется для приготовления импрессионист в э/м с низкими рабочими группами": {
+    "Питчер объемом ... со используется для приготовления эспрессо в э/м с низкими рабочими группами": {
         CorrectOption: "150",
         InvalidOptions: []string{"600", "350", "1000"},
     },
@@ -362,7 +362,7 @@ var Quiz = entity.NewQuiz(map[entity.Question]entity.Answer{
         CorrectOption: "Развитие",
         InvalidOptions: []string{"Карамелизация", "Реакция Майяра", "Первый крек"},
     },
-    "Четвёртый этаж обжарки": {
+    "Четвёртый этап обжарки": {
         CorrectOption: "Карамелизация",
         InvalidOptions: []string{"Второй крек", "Развитие", "Первый крек"},
     },
