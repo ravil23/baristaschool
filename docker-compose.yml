@@ -4,7 +4,7 @@ services:
 
   postgres:
     build: ./postgres
-    container_name: postgres_container
+    container_name: baristaschool_postgres_container
     environment:
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-baristaschool}"
     volumes:
@@ -12,12 +12,12 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     networks:
-      - postgres
+      - baristaschool_postgres
     restart: unless-stopped
 
   pgadmin:
     image: dpage/pgadmin4:4.21
-    container_name: pgadmin_container
+    container_name: baristaschool_pgadmin_container
     environment:
       PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}"
       PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_DEFAULT_PASSWORD:-admin}"
@@ -26,12 +26,12 @@ services:
     ports:
       - "${PGADMIN_PORT:-5050}:80"
     networks:
-      - postgres
+      - baristaschool_postgres
     restart: unless-stopped
 
   telegrambot:
     build: ./telegrambot
-    container_name: telegrambot_container
+    container_name: baristaschool_telegrambot_container
     environment:
       POSTGRES_ADDRESS: "postgres:5432"
       POSTGRES_DATABASE: "baristaschool"
@@ -41,9 +41,9 @@ services:
     depends_on:
       - postgres
     networks:
-      - postgres
+      - baristaschool_postgres
     restart: unless-stopped
 
 networks:
-  postgres:
+  baristaschool_postgres:
     driver: bridge
