@@ -12,7 +12,7 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     networks:
-      - baristaschool_postgres
+      - postgres
     restart: unless-stopped
 
   pgadmin:
@@ -26,7 +26,7 @@ services:
     ports:
       - "${PGADMIN_PORT:-5050}:80"
     networks:
-      - baristaschool_postgres
+      - postgres
     restart: unless-stopped
 
   telegrambot:
@@ -41,9 +41,9 @@ services:
     depends_on:
       - postgres
     networks:
-      - baristaschool_postgres
+      - postgres
     restart: unless-stopped
 
 networks:
-  baristaschool_postgres:
+  postgres:
     driver: bridge
