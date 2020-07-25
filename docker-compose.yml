@@ -37,7 +37,7 @@ services:
       POSTGRES_DATABASE: "baristaschool"
       POSTGRES_USER: "baristaschool"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-baristaschool}"
-      BOT_TOKEN: "${BOT_TOKEN}"
+      BOT_TOKEN: "${BARISTASCHOOL_BOT_TOKEN}"
     depends_on:
       - postgres
     networks:
